@@ -1,11 +1,11 @@
-/* Davídkovy hry – šablona service workeru (společná). Hra při sestavení nahradí 20261110-0906, hratky-, hratky-sw, ["./", "index.html", "manifest.webmanifest", "ikona-180.png", "ikona-192.png", "ikona-512.png", "audio/audio-0.bin", "audio/audio-1.bin", "audio/audio-2.bin", "audio/audio-3.bin", "audio/audio-4.bin", "audio/audio-5.bin", "audio/audio-6.bin", "audio/audio-7.bin", "audio/audio-8.bin", "audio/audio-9.bin", "audio/index.json"].
+/* Davídkovy hry – šablona service workeru (společná). Hra při sestavení nahradí 20261110-0939, hratky-, hratky-sw, ["./", "index.html", "manifest.webmanifest", "ikona-180.png", "ikona-192.png", "ikona-512.png", "audio/audio-0.bin", "audio/audio-1.bin", "audio/audio-10.bin", "audio/audio-11.bin", "audio/audio-12.bin", "audio/audio-13.bin", "audio/audio-14.bin", "audio/audio-15.bin", "audio/audio-16.bin", "audio/audio-17.bin", "audio/audio-18.bin", "audio/audio-19.bin", "audio/audio-2.bin", "audio/audio-20.bin", "audio/audio-3.bin", "audio/audio-4.bin", "audio/audio-5.bin", "audio/audio-6.bin", "audio/audio-7.bin", "audio/audio-8.bin", "audio/audio-9.bin", "audio/index.json"].
    Uloží hru do iPadu, aby jako aplikace na ploše fungovala i bez internetu.
    Stahuje soubor po souboru a hlásí průběh stránce (BroadcastChannel 'hratky-sw'); nová verze se použije,
    až když je stažená celá. Po nahrání nové verze se hra při dalším spuštění s internetem sama aktualizuje. */
-const VERZE = '20261110-0906';
+const VERZE = '20261110-0939';
 const PREFIX = 'hratky-';            // např. 'hratky-'
 const CACHE = PREFIX + VERZE;
-const SOUBORY = ["./", "index.html", "manifest.webmanifest", "ikona-180.png", "ikona-192.png", "ikona-512.png", "audio/audio-0.bin", "audio/audio-1.bin", "audio/audio-2.bin", "audio/audio-3.bin", "audio/audio-4.bin", "audio/audio-5.bin", "audio/audio-6.bin", "audio/audio-7.bin", "audio/audio-8.bin", "audio/audio-9.bin", "audio/index.json"];          // seznam souborů k uložení
+const SOUBORY = ["./", "index.html", "manifest.webmanifest", "ikona-180.png", "ikona-192.png", "ikona-512.png", "audio/audio-0.bin", "audio/audio-1.bin", "audio/audio-10.bin", "audio/audio-11.bin", "audio/audio-12.bin", "audio/audio-13.bin", "audio/audio-14.bin", "audio/audio-15.bin", "audio/audio-16.bin", "audio/audio-17.bin", "audio/audio-18.bin", "audio/audio-19.bin", "audio/audio-2.bin", "audio/audio-20.bin", "audio/audio-3.bin", "audio/audio-4.bin", "audio/audio-5.bin", "audio/audio-6.bin", "audio/audio-7.bin", "audio/audio-8.bin", "audio/audio-9.bin", "audio/index.json"];          // seznam souborů k uložení
 let bc = null; try { bc = new BroadcastChannel('hratky-sw'); } catch (e) {}
 const hlas = d => { try { bc && bc.postMessage(d); } catch (e) {} };
 self.addEventListener('install', e => {
