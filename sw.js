@@ -1,6 +1,6 @@
 /* Uloží hru do iPadu, aby jako aplikace na ploše fungovala i bez internetu.
    Po nahrání nové verze se hra při dalším spuštění s internetem sama aktualizuje. */
-const VERZE = '20261109-2357';
+const VERZE = '20261110-0825';
 const CACHE = 'hratky-' + VERZE;
 const SOUBORY = ["./", "index.html", "manifest.webmanifest", "ikona-180.png", "ikona-192.png", "ikona-512.png", "audio/audio-0.bin", "audio/audio-1.bin", "audio/audio-2.bin", "audio/audio-3.bin", "audio/audio-4.bin", "audio/audio-5.bin", "audio/audio-6.bin", "audio/audio-7.bin", "audio/index.json"];
 self.addEventListener('install', e => {
