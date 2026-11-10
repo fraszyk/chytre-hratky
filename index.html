@@ -674,19 +674,9 @@ svg .plna{fill:var(--ink);pointer-events:none}
 .mst .souhrn .tip{ font-weight: 700; }
 .mst .svet.spi .dum{ filter: grayscale(.6) brightness(.85); }
 .mst .svet.spi::after{ content: "🌙"; position: absolute; top: 20px; right: 24px; font-size: 64px; font-family: var(--emoji); }
-.mst .hlaseni{ border-top: 2px solid var(--tecka); padding-top: 10px; display: flex; flex-direction: column; gap: 8px; }
-.mst .hlaseni h3{ margin: 0; font-size: 20px; font-weight: 800; }
-.mst .hlaseni textarea{ width: 100%; box-sizing: border-box; font: 500 16px var(--font); border: 3px solid var(--ink); border-radius: 14px; padding: 8px 10px; resize: vertical; }
-.mst .hl-typy{ display: flex; gap: 18px; font-weight: 700; }
-.mst .hl-seznam{ list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.mst .hl-polozka{ display: flex; align-items: center; gap: 8px; background: var(--papir); border-radius: 12px; padding: 6px 8px; }
-.mst .hl-typ{ font-family: var(--emoji); font-size: 20px; }
-.mst .hl-text{ flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 15px; }
-.mst .hl-text small{ display: block; color: #57557A; font-size: 12px; }
-.mst .hl-polozka a.mini{ display: inline-grid; place-items: center; text-decoration: none; color: var(--ink); font-size: 14px; }
+.mst .dh-hlaseni{ border-top: 2px solid var(--tecka); padding-top: 10px; }
 .mst .uk-postava{ touch-action: none; }
 .mst .uk-postava.drzim::after{ content: ""; position: absolute; inset: -9px; border-radius: 50%; border: 5px solid var(--hrozen); animation: m_drz 1s linear forwards; }
-.mst .hl-polozka .hl-mail{ background: var(--trava); color: var(--karta); border-color: var(--ink); white-space: nowrap; }
 .mst .m-skryte{ visibility: hidden; opacity: 0; }
 .mst .m-karty{ transition: opacity .3s; }
 .mst .m-karty .m-karta{ min-width: clamp(100px, 16vmin, 150px); min-height: clamp(100px, 16vmin, 150px); }
@@ -1617,6 +1607,141 @@ svg .plna{fill:var(--ink);pointer-events:none}
 
 <div id="rodicePanel" class="overlay" hidden></div>
 
+<style>
+/* Davídkovy hry – společné hlášení chyb a nápadů. Barvy přes proměnné hry (s výchozími hodnotami). */
+.dh-hlaseni{display:block}
+.dh-hlaseni p{margin:6px 0;line-height:1.4}
+.dh-prepinac{display:flex;align-items:center;gap:14px;font-weight:700;margin:6px 0}
+.dh-prepinac input{width:24px;height:24px;accent-color:var(--trava,#2fa84f)}
+.dh-text{width:100%;box-sizing:border-box;font:inherit;border:3px solid var(--ink,#5b3a17);border-radius:12px;padding:8px;resize:vertical;user-select:text;-webkit-user-select:text}
+.dh-tlacitka{display:flex;gap:12px;flex-wrap:wrap;margin:8px 0}
+.dh-tl{display:inline-flex;align-items:center;justify-content:center;font:800 20px var(--font,inherit);padding:10px 22px;border:4px solid var(--ink,#5b3a17);border-radius:22px;background:var(--karta,#fff);color:var(--ink,#5b3a17);box-shadow:4px 4px 0 var(--ink,#5b3a17);text-decoration:none;cursor:pointer;touch-action:manipulation}
+.dh-tl:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink,#5b3a17)}
+.dh-hlavni{background:var(--trava,#8fd16a)}
+.dh-stav{font-size:20px;font-weight:700;border:4px solid var(--ink,#5b3a17);border-radius:16px;padding:12px 14px;margin:0}
+
+</style>
+<script>
+/* Davídkovy hry – společné hlášení chyb a nápadů (jeden soubor pro Městečko, Chytré hrátky i Davídkovu dráhu).
+   Vychází 1:1 z Chytrých hrátek (hratky-src/app.js, 10. 11. 2026): společný formulář Web3Forms → e-mail her,
+   fronta bez internetu, záloha e-mailem (mailto), kopírování textu, místní seznam hlášení, potvrzení odeslání.
+   Každá hra ho při sestavení vloží do stránky. NEMĚNIT v jednotlivých hrách – změna patří sem a platí pro všechny.
+
+   Použití:
+     Hlaseni.init({ hra:'Davídkova dráha', hra_id:'davidkova-draha', verze:'…', klicPrefix:'davidkova-draha',
+                    onOk:()=>zvuk(), onChyba:()=>{} });
+     panel.innerHTML += Hlaseni.sekce(kde, posledniVeta);      // HTML <details> do panelu pro rodiče
+     Hlaseni.napoj(panel, { kde, posledniVeta, extra });      // po vložení; extra = {pole: hodnota} navíc ke kontextu
+*/
+(function (G) {
+  'use strict';
+  const FORM_URL = 'https://api.web3forms.com/submit', FORM_KLIC = 'b83a9c80-22a5-49f8-a9bc-39fdbe50889a';
+  // adresa her, obráceně + base64 (aby ji roboti nesebrali z kódu stránky tak snadno)
+  const MAIL = (() => { try { return decodeURIComponent(escape(atob('=02bj5CZ19GbjlGQ5JHa5Z3brRWa2FGZ'.split('').reverse().join('')))); } catch (e) { return ''; } })();
+  let C = null;
+  const esc = t => String(t == null ? '' : t).replace(/[<&>"]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;', '"': '&quot;' }[c]));
+  const klic = x => C.klicPrefix + '-' + x;
+  function frontaNacti() { try { return JSON.parse(localStorage.getItem(klic('fronta')) || '[]'); } catch (e) { return []; } }
+  function frontaUloz(a) { try { localStorage.setItem(klic('fronta'), JSON.stringify(a.slice(-30))); } catch (e) {} }
+  function nactiHl() { try { return JSON.parse(localStorage.getItem(klic('hlaseni')) || '[]'); } catch (e) { return []; } }
+  async function odesliHlaseni(h) {
+    if (!FORM_KLIC || !navigator.onLine) return false;
+    try {
+      const r = await fetch(FORM_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ access_key: FORM_KLIC, from_name: C.hra, subject: h.subject, message: h.message, hra: C.hra, hra_id: C.hra_id, ...h.pole }) });
+      const j = await r.json().catch(() => ({}));
+      return r.ok && j.success !== false;
+    } catch (e) { return false; }
+  }
+  // fronta: zámek proti souběhu (dvě události 'online', 'online' + časovač), frontu vyprázdnit PŘED odesláním,
+  // neodeslané vrátit k tomu, co mezitím přibylo; hlášení poslaná ručně e-mailem (zálohou) se už neposílají
+  let bezi = false, poOdeslani = null;
+  const zrusene = new Set();
+  async function odesliFrontu() {
+    if (!C || !FORM_KLIC || bezi) return;
+    const a = frontaNacti().filter(h => !zrusene.has(h.id)); if (!a.length) return;
+    bezi = true; frontaUloz([]);
+    const nesla = [];
+    try { for (const h of a) { if (zrusene.has(h.id)) continue; if (!(await odesliHlaseni(h))) nesla.push(h); } }
+    finally {
+      const zbyle = nesla.filter(h => !zrusene.has(h.id));
+      if (zbyle.length) frontaUloz([...zbyle, ...frontaNacti()]);
+      bezi = false;
+      if (poOdeslani) { try { poOdeslani(); } catch (e) {} }
+    }
+  }
+
+  const Hlaseni = {
+    mail: MAIL,
+    init(cfg) {
+      C = Object.assign({ verze: 'dev', klicPrefix: cfg.hra_id, onOk: null, onChyba: null }, cfg);
+      addEventListener('online', odesliFrontu); setTimeout(odesliFrontu, 5000);
+    },
+    sekce(kde, posledniVeta) {
+      return `<details class="dh-hlaseni"><summary style="font-weight:700;cursor:pointer">Nahlásit chybu nebo nápad</summary>
+      <p>Napište, co nefunguje nebo co přidat. Tlačítko hlášení odešle na <b style="user-select:all;-webkit-user-select:all">${esc(MAIL)}</b>; bez internetu počká a odešle se samo. Hlášení zůstane uložené i tady v tabletu.</p>
+      <div class="dh-prepinac"><label><input type="radio" name="typHl" value="bug" checked> Chyba</label> <label><input type="radio" name="typHl" value="enhancement"> Nápad</label></div>
+      <textarea id="textHl" rows="4" class="dh-text" placeholder="Např.: U Počasí se 3× po sobě ptala na šálu."></textarea>
+      <p style="font-size:15px">Přiloží se: ${esc(kde)}${posledniVeta != null ? ` · poslední věta: „${esc(String(posledniVeta).slice(0, 90))}“` : ''}</p>
+      <div class="dh-tlacitka"><a class="dh-tl dh-hlavni" id="odeslatHl" href="#">Odeslat e-mailem</a><button type="button" class="dh-tl" id="kopirujHl">Zkopírovat text</button></div>
+      <p id="stavOdeslani" class="dh-stav" role="status" aria-live="polite" hidden></p>
+      <p id="seznamHl" style="font-size:15px"></p>
+    </details>`;
+    },
+    napoj(p, o) {
+      o = o || {}; const kde = o.kde || '', posl = o.posledniVeta, extra = o.extra || {};
+      const $ = s => p.querySelector(s);
+      const stavHl = t => { $('#seznamHl').textContent = t; };
+      const ukazHl = () => { const a = nactiHl(), f = frontaNacti().length;
+        stavHl((a.length ? `Uložená hlášení: ${a.length} (poslední: ${a[a.length - 1].t.slice(0, 60)})` : '') + (f ? ` · čeká na odeslání: ${f}` : '')); };
+      ukazHl();
+      poOdeslani = () => { if (p.isConnected && $('#seznamHl')) ukazHl(); };
+      const sestav = () => {
+        const typ = $('input[name=typHl]:checked').value, t = $('#textHl').value.trim();
+        const druh = typ === 'bug' ? 'Chyba' : 'Nápad', web = location.href.split('#')[0];
+        const extraTxt = Object.entries(extra).map(([k, v]) => `${k}: ${v}`).join('\n');
+        const telo = `HRA: ${C.hra} (verze ${C.verze})\nDRUH: ${druh}\nKDE VE HŘE: ${kde}\n\n${t}\n\n---\n` +
+          (posl != null ? `Poslední věta: ${posl}\n` : '') + (extraTxt ? extraTxt + '\n' : '') + `Web: ${web}\nZařízení: ${navigator.userAgent}`;
+        const predmet = `[${C.hra}] ${druh}: ${t.split('\n')[0].slice(0, 70) || kde}`;
+        return { typ, t, telo, predmet,
+          pole: Object.assign({ druh, cast_hry: kde, verze: C.verze }, posl != null ? { posledni_veta: posl } : {}, extra, { zarizeni: navigator.userAgent, web }),
+          url: `mailto:${MAIL}?subject=${encodeURIComponent(predmet)}&body=${encodeURIComponent(telo)}` };
+      };
+      const ulozHl = x => { try { const a = nactiHl(); a.push({ t: x.t, typ: x.typ, kde, d: new Date().toISOString() }); localStorage.setItem(klic('hlaseni'), JSON.stringify(a.slice(-50))); } catch (_) {} };
+      const vycisti = () => { $('#textHl').value = ''; };
+      const potvrd = (text, ok) => { const e = $('#stavOdeslani'); e.hidden = false; e.textContent = text; e.style.background = ok ? '#D9F5E5' : '#FFE7C2';
+        try { e.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {} };
+      $('#kopirujHl').onclick = async () => {
+        const x = sestav(); if (!x.t) { $('#textHl').focus(); return; }
+        const txt = `Komu: ${MAIL}\nPředmět: ${x.predmet}\n\n${x.telo}`;
+        try { await navigator.clipboard.writeText(txt); $('#kopirujHl').textContent = 'Zkopírováno'; } catch (_) { const ta = $('#textHl'); ta.value = txt; ta.select(); }
+        ulozHl(x); ukazHl();
+      };
+      const odk = $('#odeslatHl');
+      if (FORM_KLIC) odk.textContent = 'Odeslat';
+      odk.onclick = async e => {
+        const x = sestav(); if (!x.t) { e.preventDefault(); $('#textHl').focus(); return; }
+        if (!FORM_KLIC) { odk.href = x.url; ulozHl(x); setTimeout(() => { vycisti(); ukazHl(); }, 300); return; }
+        e.preventDefault(); if (odk.dataset.posila) return; odk.dataset.posila = '1'; ulozHl(x);
+        const puvodni = odk.textContent; odk.textContent = 'Odesílám…'; $('#stavOdeslani').hidden = true;
+        const h = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), subject: x.predmet, message: x.telo, pole: x.pole };
+        const ok = await odesliHlaseni(h); delete odk.dataset.posila; odk.textContent = puvodni;
+        if (ok) { vycisti(); ukazHl(); potvrd(`✅ Odesláno, díky! ${x.typ === 'bug' ? 'Hlášení chyby' : 'Nápad'} dorazí na ${MAIL}.`, true); if (C.onOk) C.onOk(); }
+        else { frontaUloz([...frontaNacti(), h]); vycisti(); ukazHl();
+          potvrd('⚠️ Teď se to nepodařilo odeslat. Hlášení je uložené a odešle se samo, až bude internet. Nebo ho pošlete e-mailem tlačítkem vlevo.', false);
+          const zal = odk.cloneNode(true); zal.textContent = 'Odeslat e-mailem'; zal.href = x.url;
+          // poslané ručně e-mailem → vyřadit z fronty, ať nedorazí dvakrát
+          zal.onclick = () => { zrusene.add(h.id); frontaUloz(frontaNacti().filter(q => q.id !== h.id)); setTimeout(ukazHl, 0); };
+          odk.replaceWith(zal);
+          if (C.onChyba) C.onChyba(); }
+      };
+    },
+    odesliFrontu, frontaNacti, nactiHl,
+  };
+  G.Hlaseni = Hlaseni;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
 <script>
 /* ==========================================================================
    CHYTRÉ HRÁTKY v3
@@ -1842,9 +1967,13 @@ function kontext(h){
       if(hra!==h||h.zamceno)return;
       h.zamceno=true;zvuk.ok();
       const r=(prvek||stage).getBoundingClientRect();konfety(r.left+r.width/2,r.top+r.height/2);
-      rekni([oslov(pochvala()),text]);
+      const dorekl=rekni([oslov(pochvala()),text]);
       h.kolo++;vykresliPostup();
-      setTimeout(()=>{if(hra===h)dalsiKolo()},text?3400:2100);
+      /* další kolo až po dořečení (nikdy neuseknout vysvětlení), nejdřív za chvilku kvůli radosti,
+         a s pojistkou, kdyby se hlas zasekl */
+      const nejmene=new Promise(r=>setTimeout(r,stav.hlas?1300:(text?3400:2100)));
+      const pojistka=new Promise(r=>setTimeout(r,20000));
+      Promise.race([Promise.all([dorekl,nejmene]),pojistka]).then(()=>setTimeout(()=>{if(hra===h)dalsiKolo()},450));
     },
     spatne(prvek,rada,hned){
       if(hra!==h||h.zamceno)return;
@@ -2169,7 +2298,7 @@ pridejModul({
       const mene=Math.random()<.5,cil=mene?Math.min(a,b):Math.max(a,b);
       const w=el('div','odpovedi');
       zamichej([a,b]).forEach(v=>{const k=tl('nalepka cislo',`<span class="cif">${v}</span>`,String(v));if(v===cil)k.dataset.ok='1';
-        k.onclick=()=>v===cil?(c.zamceno()||k.classList.add('ok'),c.spravne(`${Cap(Cn(v))} je ${mene?'menší':'větší'} než ${Cn(v===a?b:a)}.`,k)):c.spatne(k,mene?'Které číslo bys řekl při počítání dřív?':'Které číslo bys řekl při počítání později?');
+        k.onclick=()=>v===cil?(c.zamceno()||k.classList.add('ok'),c.spravne([`${Cap(Cn(v))} je ${mene?'menší':'větší'} než ${Cn(v===a?b:a)}.`,`Když počítáme, ${Cn(Math.min(a,b))} řekneme dřív a ${Cn(Math.max(a,b))} až potom. Proto je ${Cn(Math.max(a,b))} větší.`],k)):c.spatne(k,mene?'Které číslo bys řekl při počítání dřív?':'Které číslo bys řekl při počítání později?');
         w.appendChild(k)});
       c.stage.appendChild(w);
       c.rekni(mene?'Které číslo je menší?':'Které číslo je větší?');
@@ -2252,7 +2381,8 @@ pridejModul({
       c.rekni(V(`${Cap(z.n)} stojí ${koruny(cena)}. Zaplať přesně.`,`Chceš ${z.a}? Stojí ${koruny(cena)}. Polož penízky na pult.`,`Paní prodavačka říká: ${koruny(cena)}, prosím.`));
       const pl=tl('nalepka hotovo-ok',E('💰')+' Zaplatit');pl.onclick=()=>{
         if(c.zamceno())return;const s=prepocti();
-        if(s===cena)c.spravne(V('Zaplaceno přesně. Děkujeme za nákup!','Sedí to na korunu. Ať chutná!','Přesně tak. Hezký den přeje obchod!'),pult);
+        if(s===cena){const m=[...pult.querySelectorAll('.mince')].map(x=>+x.dataset.v).sort((a,b)=>b-a);
+          c.spravne([m.length>1?`${m.map(v=>Cn(v)).join(' a ')} je dohromady ${Cn(cena)}.`:`Jedna mince za ${koruny(cena)}.`,'Přesně tolik to stojí.',V('Děkujeme za nákup!','Ať chutná!','Hezký den přeje obchod!')],pult)}
         else if(s<cena)c.spatne(pult,ukazSumu?`Ještě to nestačí. Chybí ${koruny(cena-s)}.`:'Ještě to nestačí. Přidej.',true);
         else c.spatne(pult,'To je moc. Vrať nějakou minci zpátky do peněženky.',true);
       };
@@ -2262,7 +2392,7 @@ pridejModul({
       const levn=u>=2&&Math.random()<.4,cil=levn?(c1<c2?z1:z2):(c1>c2?z1:z2);
       const sc=el('div','obchod');
       [[z1,c1],[z2,c2]].forEach(([z,cena])=>{const k=kartaZbozi(z,cena,true);if(z===cil)k.dataset.ok='1';
-        k.onclick=()=>z===cil?(c.zamceno()||k.classList.add('ok'),c.spravne(`${Cap(z.n)} stojí ${levn?'méně':'víc'}.`,k)):c.spatne(k,'Podívej se na čísla na cenovkách. Které je větší?');sc.appendChild(k)});
+        k.onclick=()=>z===cil?(c.zamceno()||k.classList.add('ok'),c.spravne([`${Cap(z.n)} stojí ${koruny(z===z1?c1:c2)}, ${(z===z1?z2:z1).n} ${koruny(z===z1?c2:c1)}.`,`${Cap(Cn(Math.max(c1,c2)))} je víc než ${Cn(Math.min(c1,c2))}, proto ${levn?`je levnější ${z.n}`:`je dražší ${z.n}`}.`],k)):c.spatne(k,'Podívej se na čísla na cenovkách. Které je větší?');sc.appendChild(k)});
       c.stage.appendChild(sc);
       c.rekni(levn?V('Co je levnější?','Co stojí méně peněz?'):V('Co je dražší?','Co stojí víc peněz?'));
     }else if(typ==='kup'){
@@ -2273,7 +2403,7 @@ pridejModul({
       const pen=el('div','penezenka');let zb_=mam;[50,20,10,5,2,1].forEach(v=>{while(zb_>=v){pen.insertAdjacentHTML('beforeend',`<span class="mince m${v}">${mince(v)}</span>`);zb_-=v}});
       c.stage.appendChild(pen);
       zamichej([0,1,2]).forEach(i=>{const k=kartaZbozi(zb[i],ceny[i],true);if(i===0)k.dataset.ok='1';
-        k.onclick=()=>i===0?(c.zamceno()||k.classList.add('ok'),c.spravne(`Na ${ok.a} ti to stačí.`,k)):c.spatne(k,`Máš jen ${koruny(mam)}. Tohle stojí víc.`);sc.appendChild(k)});
+        k.onclick=()=>i===0?(c.zamceno()||k.classList.add('ok'),c.spravne([`Máš ${koruny(mam)} a ${ok.n} stojí ${koruny(ceny[0])}.`,ceny[0]===mam?'To je přesně tolik, kolik máš.':`${Cap(Cn(ceny[0]))} je méně než ${Cn(mam)}, proto ti to stačí.`],k)):c.spatne(k,`Máš jen ${koruny(mam)}. Tohle stojí víc.`);sc.appendChild(k)});
       c.stage.appendChild(sc);
       c.rekni(V(`Máš ${koruny(mam)}. Co si za ně koupíš?`,`V peněžence je ${koruny(mam)}. Na co ti to stačí?`));
     }else{
@@ -2282,7 +2412,7 @@ pridejModul({
       const pl=el('div','platba');pl.innerHTML=`Platíš: <span class="mince m${plat}">${mince(plat)}</span>`;sc.appendChild(pl);c.stage.appendChild(sc);
       const jak={10:'desetikorunou',20:'dvacetikorunou',50:'padesátikorunou'}[plat];
       c.rekni(`${Cap(z.n)} stojí ${koruny(cena)}. Zaplatíš ${jak}. Kolik ti vrátí?`);
-      odpovedi(c,vrati,Math.max(12,vrati+2),false,`Vrátí ti ${koruny(vrati)}.`,null,`Počítej od ${Cn(cena)} až do ${Cn(plat)}.`,4);
+      odpovedi(c,vrati,Math.max(12,vrati+2),false,[`${Cap(Cn(cena))} a ${Cn(vrati)} je ${Cn(plat)}.`,`Proto ti vrátí ${koruny(vrati)}.`],null,`Počítej od ${Cn(cena)} až do ${Cn(plat)}.`,4);
     }
   }
 });
@@ -2377,6 +2507,12 @@ pridejModul({
 
 /* ---------------- HLAVIČKA ---------------- */
 
+/* jména obrázků z řad (aby Zuzana mohla vysvětlit pravidlo) */
+const JMENO_EMO={'🍎':'jablko','🍌':'banán','🍇':'hrozny','🍓':'jahoda','🐶':'pejsek','🐱':'kočička','🐰':'zajíček','🐻':'méďa',
+  '🔴':'červené kolečko','🔵':'modré kolečko','🟡':'žluté kolečko','🟢':'zelené kolečko','⭐':'hvězdička','🌙':'měsíc','☀️':'sluníčko','☁️':'mráček',
+  '🚗':'auto','🚌':'autobus','🚂':'vláček','✈️':'letadlo','🟥':'červený čtvereček','🟦':'modrý čtvereček','🟨':'žlutý čtvereček','🟩':'zelený čtvereček',
+  '🌻':'slunečnice','🌷':'tulipán','🍄':'houbička','🍀':'čtyřlístek','🐟':'rybička','🐙':'chobotnice','🦀':'krab','🐳':'velryba',
+  '🎈':'balónek','🎁':'dárek','🎂':'dort','🎉':'konfety','🍦':'zmrzlina','🍩':'kobliha','🍪':'sušenka','🧁':'dortík'};
 const SADY=[['🍎','🍌','🍇','🍓'],['🐶','🐱','🐰','🐻'],['🔴','🔵','🟡','🟢'],['⭐','🌙','☀️','☁️'],['🚗','🚌','🚂','✈️'],['🟥','🟦','🟨','🟩'],['🌻','🌷','🍄','🍀'],['🐟','🐙','🦀','🐳'],['🎈','🎁','🎂','🎉'],['🍦','🍩','🍪','🧁']];
 const VZORY={1:['AB'],2:['AAB','ABB','ABC'],3:['AABB','ABCD','ABAC','ABCC','AABC'],4:['ABCB','AABBC','ABBCC','ABACD','AABAC']};
 const TONY={A:523,B:659,C:784,D:988};
@@ -2395,8 +2531,10 @@ pridejModul({
     let moz=[...pis];while(moz.length<pocet&&nepouzite.length){const k='X'+nepouzite.length;mapa[k]=nepouzite.pop();moz.push(k)}
     moz=zamichej(moz);
     c.rekni(uprostred?V('Co tu chybí?','Někdo z řady utekl. Kdo to byl?','Doplň díru v řadě.'):V('Co bude dál?','Jak řada pokračuje?','Kdo přijde na řadu teď?'));
-    volbyKaret(c,moz.map(p=>({html:E(mapa[p]),ok:p===spravna})),{
-      rada:'Řekni si řadu nahlas a poslouchej, co se opakuje.',
+    const jednotka=[...vz].map(p=>JMENO_EMO[mapa[p]]).join(', ');
+    const vysvetli=[`Řada se pořád opakuje: ${jednotka}.`,uprostred?`Proto tady chybí ${JMENO_EMO[mapa[spravna]]}.`:`Proto teď přijde ${JMENO_EMO[mapa[spravna]]}.`];
+    volbyKaret(c,moz.map(p=>({html:E(mapa[p]),ok:p===spravna})),{okText:vysvetli,
+      rada:['Řekni si řadu nahlas a poslouchej, co se opakuje.',`Opakuje se: ${jednotka}.`],
       poOk(){
         const k=karty[skryty];k.className='nalepka obr';k.innerHTML=E(mapa[spravna]);
         seq.forEach((p,i)=>setTimeout(()=>{karty[i].classList.remove('ma-zvuk');void karty[i].offsetWidth;karty[i].classList.add('ma-zvuk');ton(TONY[p],.18)},i*190));
@@ -2468,7 +2606,7 @@ pridejModul({
     if(u>=3&&!opacne)moz.push({html:stin(cil,true),ok:false});
     c.stage.appendChild(el('div','velky-obr',opacne?stin(cil):cil));
     c.rekni(opacne?V('Čí je to stín?','Komu patří tenhle stín?'):V('Najdi jeho stín.','Kde se schovává jeho stín?','Který stín patří k obrázku?'));
-    volbyKaret(c,zamichej(moz),{rada:u>=3&&!opacne?'Pozor, jeden stín je obrácený. Kam se obrázek dívá?':'Podívej se na tvar. Který stín má stejný tvar?'});
+    volbyKaret(c,zamichej(moz),{okText:u>=3&&!opacne?['Stín má stejný tvar a dívá se stejným směrem jako obrázek.']:['Stín má úplně stejný tvar jako obrázek, jen je tmavý.'],rada:u>=3&&!opacne?'Pozor, jeden stín je obrácený. Kam se obrázek dívá?':'Podívej se na tvar. Který stín má stejný tvar?'});
   }
 });
 
@@ -3201,22 +3339,9 @@ pridejModul({
 
 /* ---------- panel pro rodiče (podržet ⚙️) ---------- */
 let resetKrok=0;
-const MAIL_HLASENI='davidkovyhry@icloud.com';
-/* Společný formulář pro všechny Davídkovy hry (Web3Forms, přeposílá na MAIL_HLASENI).
-   Stačí doplnit FORM_KLIC; do té doby tlačítko otevře Mail. Každé hlášení nese jasnou identitu hry. */
-const FORM_URL='https://api.web3forms.com/submit',FORM_KLIC='b83a9c80-22a5-49f8-a9bc-39fdbe50889a';
-const HRA_ID={hra:'Chytré hrátky',hra_id:'chytre-hratky'};
-const FRONTA='hratky-fronta';
-function frontaNacti(){try{return JSON.parse(localStorage.getItem(FRONTA)||'[]')}catch(e){return[]}}
-function frontaUloz(a){try{localStorage.setItem(FRONTA,JSON.stringify(a.slice(-30)))}catch(e){}}
-async function odesliHlaseni(h){
-  if(!FORM_KLIC||!navigator.onLine)return false;
-  try{const r=await fetch(FORM_URL,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},
-    body:JSON.stringify({access_key:FORM_KLIC,from_name:HRA_ID.hra,subject:h.subject,message:h.message,...HRA_ID,...h.pole})});
-    const j=await r.json().catch(()=>({}));return r.ok&&j.success!==false}catch(e){return false}}
-async function odesliFrontu(){if(!FORM_KLIC)return;const a=frontaNacti();if(!a.length)return;const zbyle=[];for(const h of a){if(!(await odesliHlaseni(h)))zbyle.push(h)}frontaUloz(zbyle)}
-addEventListener('online',odesliFrontu);setTimeout(odesliFrontu,5000);
-const VERZE_HRY='2026-11-10 08:25';
+/* hlášení chyb a nápadů: společný modul všech Davídkových her (~/Documents/Davidkovy-hry-spolecne/hlaseni.js) */
+const VERZE_HRY='2026-11-10 08:43';
+Hlaseni.init({hra:'Chytré hrátky',hra_id:'chytre-hratky',verze:VERZE_HRY,klicPrefix:'hratky',onOk:()=>zvuk.mini()});
 function otevriRodice(){
   const p=$('#rodicePanel');
   const kde=hra?`${hra.m.nazev} (${hra.m.id}), úroveň ${mStav(hra.m.id).uroven}, kolo ${hra.kolo+1}`:'domovská obrazovka';
@@ -3232,14 +3357,7 @@ function otevriRodice(){
     <div class="radek"><span class="nm">Všem hrám nastavit</span><span class="krok">
       <button type="button" class="mini" data-vse="1">1</button><button type="button" class="mini" data-vse="2">2</button><button type="button" class="mini" data-vse="3">3</button><button type="button" class="mini" data-vse="4">4</button></span></div>
     <div id="urovne"></div>
-    <details><summary style="font-weight:700;cursor:pointer">Nahlásit chybu nebo nápad</summary>
-      <p>Napište, co nefunguje nebo co přidat. Tlačítko otevře předvyplněný e-mail na <b style="user-select:all">davidkovyhry@icloud.com</b>, stačí ho odeslat. Hlášení zůstane uložené i tady v tabletu.</p>
-      <div class="prepinac"><label><input type="radio" name="typHl" value="bug" checked> Chyba</label> <label><input type="radio" name="typHl" value="enhancement"> Nápad</label></div>
-      <textarea id="textHl" rows="4" style="width:100%;box-sizing:border-box;font:inherit;border:3px solid var(--ink);border-radius:12px;padding:8px" placeholder="Např.: U Počasí se 3× po sobě ptala na šálu."></textarea>
-      <p style="font-size:15px">Přiloží se: ${kde} · poslední věta: „${(posledni||[]).map(x=>x.t||x).join(' ').slice(0,90)}“</p>
-      <div class="tlacitka"><a class="nalepka velke zelene" id="odeslatHl" href="#" style="text-decoration:none;color:var(--ink)">Odeslat e-mailem</a><button type="button" class="nalepka velke" id="kopirujHl">Zkopírovat text</button></div>
-      <p id="seznamHl" style="font-size:15px"></p>
-    </details>
+    ${Hlaseni.sekce(kde,(posledni||[]).map(x=>x.t||x).join(' '))}
     <details><summary style="font-weight:700;cursor:pointer">O hlasu a zvucích</summary>
       <p>Hlas: předem namluvené věty hlasem Zuzana (Enhanced). Co nahrané není, přečte hlas tabletu.</p>
       <p>Zvuky zvířat a nástrojů pocházejí z volně licencovaných zdrojů (CC0 a public domain). Poděkování za nahrávky pod licencí CC BY, všechny upravené:</p>
@@ -3252,32 +3370,7 @@ function otevriRodice(){
       <button type="button" class="nalepka velke zelene" id="btnZavrit">Zavřít</button>
     </div></div>`;
   try{const ch=JSON.parse(localStorage.getItem('hratky-chybi')||'[]');p.querySelector('#chybi').textContent=ch.length?ch.length+' vět':'žádné'}catch(e){}
-  /* hlášení chyb a nápadů → společný formulář všech Davídkových her (nebo e-mail přes Mail) + místní seznam */
-  const HL='hratky-hlaseni';const nactiHl=()=>{try{return JSON.parse(localStorage.getItem(HL)||'[]')}catch(e){return[]}};
-  const stavHl=t=>{p.querySelector('#seznamHl').textContent=t};
-  const ukazHl=()=>{const a=nactiHl(),f=frontaNacti().length;stavHl((a.length?`Uložená hlášení: ${a.length} (poslední: ${a[a.length-1].t.slice(0,60)})`:'')+(f?` · čeká na odeslání: ${f}`:''))};ukazHl();
-  const sestav=()=>{const typ=p.querySelector('input[name=typHl]:checked').value,t=p.querySelector('#textHl').value.trim();
-    const druh=typ==='bug'?'Chyba':'Nápad';
-    const posl=(posledni||[]).map(x=>x.t||x).join(' ');
-    const telo=`HRA: ${HRA_ID.hra} (verze ${VERZE_HRY})\nDRUH: ${druh}\nKDE VE HŘE: ${kde}\n\n${t}\n\n---\nPoslední věta: ${posl}\nWeb: ${location.href.split('#')[0]}\nZařízení: ${navigator.userAgent}`;
-    const predmet=`[${HRA_ID.hra}] ${druh}: ${t.split('\n')[0].slice(0,70)||kde}`;
-    return{typ,t,telo,predmet,pole:{druh,cast_hry:kde,verze:VERZE_HRY,posledni_veta:posl,zarizeni:navigator.userAgent,web:location.href.split('#')[0]},
-      url:`mailto:${MAIL_HLASENI}?subject=${encodeURIComponent(predmet)}&body=${encodeURIComponent(telo)}`}};
-  const ulozHl=x=>{try{const a=nactiHl();a.push({t:x.t,typ:x.typ,kde,d:new Date().toISOString()});localStorage.setItem(HL,JSON.stringify(a.slice(-50)))}catch(_){}};
-  const vycisti=()=>{p.querySelector('#textHl').value=''};
-  p.querySelector('#kopirujHl').onclick=async()=>{const x=sestav();if(!x.t){p.querySelector('#textHl').focus();return}
-    const txt=`Komu: ${MAIL_HLASENI}\nPředmět: ${x.predmet}\n\n${x.telo}`;
-    try{await navigator.clipboard.writeText(txt);p.querySelector('#kopirujHl').textContent='Zkopírováno'}catch(_){const ta=p.querySelector('#textHl');ta.value=txt;ta.select()}
-    ulozHl(x);ukazHl()};
-  const odk=p.querySelector('#odeslatHl');
-  if(FORM_KLIC)odk.textContent='Odeslat';
-  odk.onclick=async e=>{const x=sestav();if(!x.t){e.preventDefault();p.querySelector('#textHl').focus();return}
-    if(!FORM_KLIC){odk.href=x.url;ulozHl(x);setTimeout(()=>{vycisti();ukazHl()},300);return}
-    e.preventDefault();ulozHl(x);stavHl('Odesílám…');
-    const h={subject:x.predmet,message:x.telo,pole:x.pole};
-    if(await odesliHlaseni(h)){vycisti();ukazHl();stavHl('Odesláno, díky!')}
-    else{frontaUloz([...frontaNacti(),h]);vycisti();ukazHl();stavHl('Teď se to nepodařilo odeslat. Hlášení je uložené a odešle se samo, až bude internet. Můžete ho poslat i e-mailem tlačítkem vlevo.');
-      const zal=odk.cloneNode(true);zal.textContent='Odeslat e-mailem';zal.href=x.url;zal.onclick=null;odk.replaceWith(zal)}};
+  Hlaseni.napoj(p,{kde,posledniVeta:(posledni||[]).map(x=>x.t||x).join(' ')});
   const jm=p.querySelector('#jmeno');jm.value=stav.jmeno||'';jm.oninput=()=>{stav.jmeno=jm.value;uloz()};
   p.querySelectorAll('[data-vse]').forEach(b=>b.onclick=()=>{const v=+b.dataset.vse;MODULY.forEach(m=>mStav(m.id).uroven=Math.min(v,m.maxUroven));uloz();otevriRodice()});
   const ur=p.querySelector('#urovne');
