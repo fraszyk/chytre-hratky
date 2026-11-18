@@ -49,7 +49,10 @@ button:focus-visible{outline:4px solid var(--hrozen);outline-offset:4px}
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px}
 
 /* lišta */
-.lista{display:flex;align-items:center;gap:10px;flex:none}
+/* standard Davídkových her (18. 11. 2026): venku jen bublina, 🔊 zopakovat a ⚙️ pro rodiče (podržet); zbytek v menu ☰ vpravo nahoře */
+:root{--dh-btn:clamp(48px,7.5vmin,62px)}
+.lista{display:flex;align-items:center;gap:10px;flex:none;padding-right:calc(var(--dh-btn) + 10px)}
+.kulate.mala{width:46px;height:46px;font-size:22px;box-shadow:3px 3px 0 var(--ink);border-width:3px}
 .kulate{flex:none;width:clamp(52px,8vmin,68px);height:clamp(52px,8vmin,68px);border-radius:50%;
   border:4px solid var(--ink);background:var(--karta);box-shadow:4px 4px 0 var(--ink);
   font-size:clamp(24px,4vmin,32px);display:grid;place-items:center;padding:0;font-family:var(--emoji)}
@@ -342,6 +345,23 @@ svg .plna{fill:var(--ink);pointer-events:none}
 .en-cislo i{width:16px;height:16px;border-radius:50%;background:var(--rajce);border:2px solid var(--ink)}
 .en-cislo.velka{max-width:none;gap:14px}
 .en-cislo.velka i{width:clamp(36px,7vmin,60px);height:clamp(36px,7vmin,60px)}
+
+/* ===== responzivita (standard 18. 11. 2026): telefon i iPad, na výšku i na šířku ===== */
+.tecka-terc{fill:transparent;cursor:pointer}
+.tecky-ram,.obtah-ram{width:min(64vmin,100%)}
+@media (orientation:portrait) and (max-width:600px){
+  .tecky-ram,.obtah-ram{width:min(94vw,58vh)}
+  .paleta{grid-template-columns:repeat(auto-fill,minmax(46px,1fr));width:100%}
+  .paleta-wrap,.panel-barev{width:100%}
+  .barva{width:46px;height:46px}
+  .platno{width:min(94vw,56vh)}
+}
+@media (max-width:600px){
+  #stage{padding-inline:2px}
+  .mst.stage{padding-inline:0!important}
+}
+/* Programování šipkami (z Městečka): na telefonu na výšku menší šipky, ať se vejde deska (šipky pořád nad 44 px) */
+@media (orientation:portrait) and (max-width:600px){#stage .mst .l-rb{--b:52px;--g:10px}}
 
 /* ===== hry z Městečka (jen uvnitř .mst) ===== */
 .mst{
@@ -1575,11 +1595,9 @@ svg .plna{fill:var(--ink);pointer-events:none}
 </head><body>
 <div id="app">
   <header class="lista">
-    <button id="domu" class="kulate" type="button" aria-label="Domů" hidden>🏠</button>
+    <button id="rodic" class="kulate mala" type="button" aria-label="Pro rodiče (podržte)">⚙️</button>
     <div id="bublina" class="bublina" aria-live="polite">Na co si zahrajeme?</div>
     <button id="znovuRekni" class="kulate" type="button" aria-label="Zopakovat">🔊</button>
-    <div class="skore" aria-label="Hvězdičky"><span class="e">⭐</span> <span id="pocetHvezd">0</span></div>
-    <button id="rodic" class="kulate" type="button" aria-label="Pro rodiče (podržte)">⚙️</button>
   </header>
 
   <main id="domov" class="domov">
@@ -1619,6 +1637,45 @@ svg .plna{fill:var(--ink);pointer-events:none}
 .dh-tl:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink,#5b3a17)}
 .dh-hlavni{background:var(--trava,#8fd16a)}
 .dh-stav{font-size:20px;font-weight:700;border:4px solid var(--ink,#5b3a17);border-radius:16px;padding:12px 14px;margin:0}
+
+/* Davídkovy hry – hamburger menu vpravo nahoře (společné). Barvy přes proměnné hry: --ink, --karta, --font, --emoji. */
+#dhMenuBtn{position:fixed;right:calc(12px + env(safe-area-inset-right,0px));top:calc(10px + env(safe-area-inset-top,0px));z-index:20;width:var(--dh-btn,58px);height:var(--dh-btn,58px);border-radius:50%;border:none;background:#fff;
+  box-shadow:0 4px 0 rgba(0,0,0,.14),0 6px 14px rgba(0,0,0,.12);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;cursor:pointer;padding:0;touch-action:manipulation}
+#dhMenuBtn span{display:block;width:46%;height:4px;border-radius:2px;background:var(--ink,#333);transition:transform .2s,opacity .2s}
+#dhMenuBtn.on span:nth-child(1){transform:translateY(9px) rotate(45deg)}#dhMenuBtn.on span:nth-child(2){opacity:0}#dhMenuBtn.on span:nth-child(3){transform:translateY(-9px) rotate(-45deg)}
+#dhMenuBtn:active{transform:translateY(3px)}
+#dhMenu{box-sizing:border-box;position:fixed;z-index:19;right:calc(12px + env(safe-area-inset-right,0px));top:calc(10px + var(--dh-btn,58px) + 10px + env(safe-area-inset-top,0px));
+  width:min(360px,calc(100vw - 24px - env(safe-area-inset-left,0px) - env(safe-area-inset-right,0px)));max-height:calc(100% - var(--dh-btn,58px) - 30px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));overflow:auto;
+  background:var(--karta,#fff8ea);border-radius:24px;padding:12px;box-shadow:0 16px 40px rgba(0,0,0,.3);font-family:var(--font,system-ui);color:var(--ink,#5b3a17);touch-action:pan-y;transform-origin:top right;animation:dhMenuIn .16s ease-out}
+#dhMenu[hidden]{display:none}
+@keyframes dhMenuIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:none}}
+.dh-menu-mriz{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.dh-menu-it{border:none;border-radius:16px;background:#fff;box-shadow:0 3px 0 rgba(0,0,0,.16);padding:8px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;touch-action:manipulation;font:700 15px/1.1 var(--font,system-ui);color:inherit;min-height:76px}
+.dh-menu-it i{font-style:normal;font-family:var(--emoji,inherit);font-size:30px;line-height:38px}
+.dh-menu-it:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.16)}
+.dh-menu-sekce{margin-top:12px}
+.dh-menu-sekce h4{margin:0 0 6px;font-size:16px;font-weight:800}
+.dh-menu-pat{margin:10px 2px 0;font-size:13px;opacity:.75}
+@media (max-width:500px),(max-height:500px){.dh-menu-mriz{grid-template-columns:repeat(auto-fill,minmax(80px,1fr))}.dh-menu-it{min-height:64px;font-size:13px}.dh-menu-it i{font-size:24px;line-height:30px}}
+
+/* Davídkovy hry – štítek stavu offline vpravo dole (společný pro všechny hry).
+   Hra s lištou dole může štítek zvednout proměnnou --of-dole (výchozí 10px), např. :root{--of-dole:170px}. */
+#offline{position:fixed;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(var(--of-dole,10px) + env(safe-area-inset-bottom,0px));z-index:30;
+  font:700 14px/1.2 var(--font,system-ui);color:#26244A;background:#fff;border:3px solid #26244A;border-radius:999px;padding:5px 12px 4px;
+  box-shadow:3px 3px 0 #26244A;display:flex;align-items:center;gap:6px;max-width:min(320px,calc(100vw - 24px));cursor:pointer;user-select:none;-webkit-user-select:none}
+#offline .pruh{width:60px;height:8px;border-radius:4px;background:#E4DEFA;overflow:hidden;flex:none}
+#offline .pruh i{display:block;height:100%;width:0;background:#2FB574;transition:width .3s}
+#offline .vic{display:none;font-weight:500;font-size:13px}
+#offline.otevreny{border-radius:16px;flex-wrap:wrap}
+#offline.otevreny .vic{display:block;width:100%}
+#offline.of-ok{background:#D9F5E5}#offline.of-stahuje{background:#FFF6D6}#offline.of-chyba{background:#FFE7C2}
+/* stav v menu/nastavení (Offline.napoj) */
+.dh-of{display:flex;flex-direction:column;gap:4px;border:3px solid #26244A;border-radius:14px;padding:8px 12px;font:600 15px/1.3 var(--font,system-ui);color:#26244A;background:#fff}
+.dh-of b{font-size:17px}
+.dh-of .vic{font-weight:500;font-size:14px}
+.dh-of .pruh{display:block;height:8px;border-radius:4px;background:#E4DEFA;overflow:hidden}
+.dh-of .pruh i{display:block;height:100%;background:#2FB574;transition:width .3s}
+.dh-of.of-ok{background:#D9F5E5}.dh-of.of-stahuje,.dh-of.of-\?{background:#FFF6D6}.dh-of.of-chyba{background:#FFE7C2}
 
 </style>
 <script>
@@ -1740,6 +1797,58 @@ svg .plna{fill:var(--ink);pointer-events:none}
   };
   G.Hlaseni = Hlaseni;
 })(typeof window !== 'undefined' ? window : globalThis);
+
+/* Davídkovy hry – hamburger menu vpravo nahoře (jeden soubor pro všechny hry, standard od 18. 11. 2026).
+   Do menu patří vše, co dítě nepotřebuje pořád na očích (nový svět, zpět, otáčení, zoom, domů, zvuk …) a dole stav
+   „Hra v tabletu“ (stažení pro offline, viz offline.js doMenu:true). Na hlavní obrazovce zůstává jen to, co se
+   používá při hře neustále (např. houba na mazání).
+   Použití:
+     Menu.init({ polozky:[{id:'zpet', ikona:'↩️', text:'Zpět', akce:()=>…, nechOtevrene:true}, …],   // ikona/text mohou být funkce
+                 web:'https://fraszyk.github.io/…/', onOtevri:()=>…, onZavri:()=>… });
+     Menu.obnov()   – překreslí popisky (např. po přepnutí zvuku)
+     Menu.zavri(), Menu.otevreno()
+   Tlačítka položek mají id "dhm-<id>". Ťuknutí mimo menu ho zavře a do hry se nepropíše. */
+(function (G) {
+  'use strict';
+  let C = null, btn = null, panel = null, otev = false;
+  const val = v => typeof v === 'function' ? v() : v;
+  const esc = t => String(t == null ? '' : t).replace(/[<&>"]/g, c => ({ '<': '&lt;', '&': '&amp;', '>': '&gt;', '"': '&quot;' }[c]));
+  function kresli() {
+    if (!panel) return;
+    panel.innerHTML = '<div class="dh-menu-mriz">' + C.polozky.map((p, i) =>
+      `<button type="button" class="dh-menu-it" id="dhm-${esc(p.id || i)}" data-i="${i}"><i>${esc(val(p.ikona))}</i><span>${esc(val(p.text))}</span></button>`).join('') + '</div>' +
+      '<div class="dh-menu-sekce"><h4>Hra v tabletu</h4><div class="dh-menu-offline"></div></div>' +
+      (C.paticka ? `<p class="dh-menu-pat">${esc(val(C.paticka))}</p>` : '');
+    panel.querySelectorAll('.dh-menu-it').forEach(b => b.addEventListener('click', () => {
+      const p = C.polozky[+b.dataset.i]; try { p.akce(); } catch (e) { setTimeout(() => { throw e; }); }
+      if (p.nechOtevrene) Menu.obnov(); else Menu.zavri();
+    }));
+    const of = panel.querySelector('.dh-menu-offline');
+    if (G.Offline && G.Offline.napoj) G.Offline.napoj(of);
+    else of.innerHTML = `<div class="dh-of of-chyba"><b>🌐 Tenhle soubor se offline neuloží</b><span class="vic">Pro hru bez internetu ji otevřete z ${esc(C.web || 'webu')} a přidejte na plochu.</span></div>`;
+  }
+  const Menu = {
+    init(cfg) {
+      C = Object.assign({ polozky: [] }, cfg);
+      btn = document.createElement('button'); btn.id = 'dhMenuBtn'; btn.type = 'button'; btn.setAttribute('aria-label', 'Menu'); btn.title = 'Menu';
+      btn.innerHTML = '<span></span><span></span><span></span>'; document.body.appendChild(btn);
+      panel = document.createElement('div'); panel.id = 'dhMenu'; panel.hidden = true; document.body.appendChild(panel);
+      btn.addEventListener('click', () => otev ? Menu.zavri() : Menu.otevri());
+      // ťuknutí mimo menu: zavřít a nepustit do hry (aby se omylem nestavělo)
+      let spolkni = 0;
+      const mimo = e => { if (!otev || panel.contains(e.target) || btn.contains(e.target)) return; e.stopPropagation(); e.preventDefault(); spolkni = Date.now(); Menu.zavri(); };
+      document.addEventListener('pointerdown', mimo, true);
+      const dozvuk = e => { if (Date.now() - spolkni < 800) { e.stopPropagation(); e.preventDefault(); if (e.type === 'click') spolkni = 0; } };
+      ['pointerup', 'click'].forEach(t => document.addEventListener(t, dozvuk, true));
+      document.addEventListener('keydown', e => { if (otev && e.key === 'Escape') Menu.zavri(); });
+    },
+    otevri() { if (!panel) return; kresli(); panel.hidden = false; otev = true; btn.classList.add('on'); if (C.onOtevri) C.onOtevri(); },
+    zavri() { if (!panel || !otev) return; panel.hidden = true; otev = false; btn.classList.remove('on'); if (C.onZavri) C.onZavri(); },
+    obnov() { if (otev) kresli(); },
+    otevreno: () => otev,
+  };
+  G.Menu = Menu;
+})(window);
 
 </script>
 <script>
@@ -1943,7 +2052,6 @@ const stage=$('#stage');
 function ukaz(kde){
   $('#domov').hidden=kde!=='domov';
   $('#hra').hidden=kde!=='hra';
-  $('#domu').hidden=kde!=='hra';
 }
 function otevriModul(m){
   $('#konec').hidden=true;
@@ -2013,7 +2121,7 @@ function jdiDomu(){
   hra=null;$('#konec').hidden=true;
   ukaz('domov');vykresliDomov();rekni(V('Na co si zahrajeme?','Co si dáme teď?','Vyber si hru!','Kam se vydáme?'));
 }
-function aktualizujHvezdy(){$('#pocetHvezd').textContent=stav.hvezdy}
+function aktualizujHvezdy(){if(window.Menu)Menu.obnov()}
 
 function vykresliDomov(){
   const t=$('#titul');
@@ -2883,6 +2991,8 @@ const TECKY=[
   {n:'motýl',e:'🦋',l:4,f:'#9B5DE5',b:[[100,70],[135,30],[175,35],[170,90],[130,105],[160,150],[125,170],[100,130],[75,170],[40,150],[70,105],[30,90],[25,35],[65,30]]},
   {n:'parník',e:'🚢',l:4,f:'#5BC0F8',b:[[15,120],[40,120],[40,90],[70,90],[70,60],[90,60],[90,90],[130,90],[130,70],[150,70],[150,120],[185,120],[160,170],[40,170]]}
 ];
+/* poloměr terče pro prst v jednotkách obrázku (224): na telefonu to dává aspoň 44 px */
+const TERC=21;
 const DO={4:'čtyřky',5:'pětky',6:'šestky',7:'sedmičky',8:'osmičky',9:'devítky',10:'desítky',12:'dvanáctky',13:'třináctky',14:'čtrnáctky',15:'patnáctky',16:'šestnáctky',20:'dvacítky'};
 pridejModul({
   id:'tecky',nazev:'Spoj tečky',ikona:'✏️',barva:'#8FD3E8',skupina:'prst',kol:4,maxUroven:4,
@@ -2897,14 +3007,16 @@ pridejModul({
     pts.forEach((p,i)=>{
       const dx=p[0]-cx,dy=p[1]-cy,dl=Math.hypot(dx,dy)||1;
       const t=sv('circle',{cx:p[0],cy:p[1],r:5.5,class:'tecka'});svg.appendChild(t);tecky.push(t);
+      svg.appendChild(sv('circle',{cx:p[0],cy:p[1],r:TERC,class:'tecka-terc','data-i':i}));
       const lb=sv('text',{x:p[0]+dx/dl*13,y:p[1]+dy/dl*13,class:'tc-cislo','text-anchor':'middle','dominant-baseline':'central'});lb.textContent=i+1;svg.appendChild(lb);cisla.push(lb);
     });
     let k=0,dolu=false;
-    const oznac=()=>{tecky.forEach((t,i)=>{t.classList.toggle('dalsi',i===k);t.classList.toggle('hotova',i<k)});cisla.forEach((t,i)=>t.classList.toggle('dalsi',i===k));if(tecky[k])tecky[k].dataset.ok='1'};
+    const terce=()=>[...svg.querySelectorAll('.tecka-terc')];
+    const oznac=()=>{tecky.forEach((t,i)=>{t.classList.toggle('dalsi',i===k);t.classList.toggle('hotova',i<k)});cisla.forEach((t,i)=>t.classList.toggle('dalsi',i===k));terce().forEach((t,i)=>{if(i===k)t.dataset.ok='1';else t.removeAttribute('data-ok')})};
     oznac();
     function spoj(){
       if(k>0)cary.appendChild(sv('line',{x1:pts[k-1][0],y1:pts[k-1][1],x2:pts[k][0],y2:pts[k][1],class:'tc-cara'}));
-      tecky[k].removeAttribute('data-ok');
+
       ton(440+k*35,.12);c.rekniKratce(Cap(Cn(k+1)));k++;oznac();
       if(k===n)konec();
     }
@@ -2925,11 +3037,11 @@ pridejModul({
     svg.addEventListener('pointerdown',e=>{
       if(c.zamceno()||k>=n)return;e.preventDefault();
       const b=svgBod(svg,e);
-      if(blizko(b,k,17)){dolu=true;try{svg.setPointerCapture(e.pointerId)}catch(_){};spoj();return}
+      if(blizko(b,k,TERC)){dolu=true;try{svg.setPointerCapture(e.pointerId)}catch(_){};spoj();return}
       const j=pts.findIndex((_,i)=>i>k&&blizko(b,i,12));
       if(j>=0)c.spatne(null,`Hledej číslo ${k+1}.`,true);
     });
-    svg.addEventListener('pointermove',e=>{if(!dolu||k>=n)return;const b=svgBod(svg,e);if(blizko(b,k,14))spoj()});
+    svg.addEventListener('pointermove',e=>{if(!dolu||k>=n)return;const b=svgBod(svg,e);if(blizko(b,k,TERC-3))spoj()});
     const pust=()=>{dolu=false};
     svg.addEventListener('pointerup',pust);svg.addEventListener('pointercancel',pust);
     c.rekni(u===1?V('Spoj tečky od jedničky. Ťukej nebo táhni prstíkem.','Začni u jedničky a spoj tečky popořadě.'):V(`Spoj tečky od jedničky až do ${DO[n]||n}.`,`Popořadě od jedné do ${DO[n]||n}. Co se objeví?`));
@@ -3340,7 +3452,7 @@ pridejModul({
 /* ---------- panel pro rodiče (podržet ⚙️) ---------- */
 let resetKrok=0;
 /* hlášení chyb a nápadů: společný modul všech Davídkových her (~/Documents/Davidkovy-hry-spolecne/hlaseni.js) */
-const VERZE_HRY='2026-11-10 09:39';
+const VERZE_HRY='2026-11-18 11:25';
 Hlaseni.init({hra:'Chytré hrátky',hra_id:'chytre-hratky',verze:VERZE_HRY,klicPrefix:'hratky',onOk:()=>zvuk.mini()});
 function otevriRodice(){
   const p=$('#rodicePanel');
@@ -3407,7 +3519,6 @@ function otevriRodice(){
 })();
 
 /* ---------- start ---------- */
-$('#domu').onclick=jdiDomu;
 $('#konecDomu').onclick=jdiDomu;
 $('#znovuRekni').onclick=()=>rekni(posledni);
 document.addEventListener('pointerdown',()=>{try{navigator.wakeLock?.request('screen').catch(()=>{})}catch(e){}},{once:true});
@@ -3429,7 +3540,17 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden)odemceno=f
 /* most pro hry z Davídkova městečka (zvuky.js rozšiřuje window.Zvuk hned při načtení) */
 window.Hlas={ctx(){odemkniZvuk();return ac},
   vystup:()=>ac&&ac.destination,rekni:x=>rekni(x),stop:()=>zastavHlas()};
-document.addEventListener('DOMContentLoaded',()=>{aktualizujHvezdy();vykresliDomov()});
+/* menu ☰ (společný modul menu.js): co dítě nepotřebuje pořád na očích */
+const hvezdyText=()=>{const n=stav.hvezdy;return n===1?'1 hvězdička':n>=2&&n<=4?n+' hvězdičky':n+' hvězdiček'};
+function celaObrazovka(){try{const d=document.documentElement;if(document.fullscreenElement||document.webkitFullscreenElement)(document.exitFullscreen||document.webkitExitFullscreen).call(document);else (d.requestFullscreen||d.webkitRequestFullscreen).call(d)?.catch?.(()=>{})}catch(e){}}
+document.addEventListener('DOMContentLoaded',()=>{
+  Menu.init({web:'https://fraszyk.github.io/chytre-hratky/',polozky:[
+    {id:'domu',ikona:'🏠',text:'Domů',akce:()=>jdiDomu()},
+    {id:'hvezdy',ikona:'⭐',text:()=>hvezdyText(),akce:()=>rekni(`Máš ${hvezdyText()}. Jen tak dál!`),nechOtevrene:true},
+    {id:'zvuk',ikona:()=>stav.hlas?'🔊':'🔇',text:()=>stav.hlas?'Hlas zapnutý':'Hlas vypnutý',akce:()=>{stav.hlas=!stav.hlas;uloz();if(!stav.hlas)zastavHlas();else rekni('Hlas je zapnutý.')},nechOtevrene:true},
+    {id:'cela',ikona:'⛶',text:'Celá obrazovka',akce:()=>celaObrazovka()}
+  ]});
+  aktualizujHvezdy();vykresliDomov()});
 
 </script>
 <script>
@@ -9814,38 +9935,48 @@ window.ZVUKY_DATA = {
 
 </script>
 
-<style>
-/* Davídkovy hry – štítek stavu offline vpravo dole (společný pro všechny hry).
-   Hra s lištou dole může štítek zvednout proměnnou --of-dole (výchozí 10px), např. :root{--of-dole:170px}. */
-#offline{position:fixed;right:calc(10px + env(safe-area-inset-right,0px));bottom:calc(var(--of-dole,10px) + env(safe-area-inset-bottom,0px));z-index:30;
-  font:700 14px/1.2 var(--font,system-ui);color:#26244A;background:#fff;border:3px solid #26244A;border-radius:999px;padding:5px 12px 4px;
-  box-shadow:3px 3px 0 #26244A;display:flex;align-items:center;gap:6px;max-width:min(320px,calc(100vw - 24px));cursor:pointer;user-select:none;-webkit-user-select:none}
-#offline .pruh{width:60px;height:8px;border-radius:4px;background:#E4DEFA;overflow:hidden;flex:none}
-#offline .pruh i{display:block;height:100%;width:0;background:#2FB574;transition:width .3s}
-#offline .vic{display:none;font-weight:500;font-size:13px}
-#offline.otevreny{border-radius:16px;flex-wrap:wrap}
-#offline.otevreny .vic{display:block;width:100%}
-#offline.of-ok{background:#D9F5E5}#offline.of-stahuje{background:#FFF6D6}#offline.of-chyba{background:#FFE7C2}
-
-</style>
 <script>
-/* Davídkovy hry – štítek stavu offline vpravo dole + registrace service workeru (společný pro všechny hry).
-   Použití (jednou, na konci stránky):  Offline.init({ kanal:'hratky-sw', velikost:'asi 67 MB', web:'https://fraszyk.github.io/chytre-hratky/' });
+/* Davídkovy hry – stav offline (stahování pro offline) + registrace service workeru (společný pro všechny hry).
+   Použití (jednou, na konci stránky):
+     Offline.init({ kanal:'hratky-sw', velikost:'asi 67 MB', web:'https://fraszyk.github.io/chytre-hratky/', doMenu:true });
+   doMenu:true (standard od 18. 11. 2026, Franta): štítek vpravo dole je vidět jen na hlavní obrazovce, dokud se hra
+     stahuje (s průběhem) nebo když stažení selhalo. Po dokončení krátce ukáže „✅ Připraveno offline“ a schová se;
+     při dalších spuštěních, kdy je hra už stažená, se na hlavní obrazovce vůbec neukáže. Stav je pak v menu/nastavení:
+       Offline.napoj(element)   – vykreslí do prvku živý stav (text, vysvětlení, průběh) a sám ho aktualizuje
+       Offline.stav()           – {s:'ok'|'stahuje'|'chyba'|'?', t, v, p}
+   Bez doMenu se chová jako dřív (štítek zůstává vidět pořád).
    Service worker vzniká ze sw-sablona.js (stejný kanál). Stránka nemusí mít #offline v HTML, modul si ho vytvoří. */
 (function(G){
- G.Offline={init(cfg){
-  const kanal=cfg.kanal,velikost=cfg.velikost||'',web=cfg.web||location.href.split('#')[0];
+ let posl={s:'?',t:'⬇️ Připravuji offline…',v:'',p:0};const posluchaci=new Set();
+ const esc=t=>String(t==null?'':t).replace(/[<&>"]/g,c=>({'<':'&lt;','&':'&amp;','>':'&gt;','"':'&quot;'}[c]));
+ G.Offline={
+ stav(){return Object.assign({},posl)},
+ napoj(el){if(!el)return;
+  const kresli=()=>{if(!el.isConnected){posluchaci.delete(kresli);return}
+   el.innerHTML=`<div class="dh-of of-${esc(posl.s)}"><b>${esc(posl.t)}</b>${posl.s==='stahuje'?`<span class="pruh"><i style="width:${Math.round(posl.p||0)}%"></i></span>`:''}<span class="vic">${esc(posl.v)}</span></div>`};
+  posluchaci.add(kresli);kresli()},
+ init(cfg){
+  const kanal=cfg.kanal,velikost=cfg.velikost||'',web=cfg.web||location.href.split('#')[0],doMenu=!!cfg.doMenu;
   let box=document.getElementById('offline');
   if(!box){box=document.createElement('div');box.id='offline';box.setAttribute('role','status');box.setAttribute('aria-live','polite');box.hidden=true;
     box.innerHTML='<span class="txt"></span><span class="pruh" hidden><i></i></span><span class="vic"></span>';document.body.appendChild(box)}
   const txt=box.querySelector('.txt'),pruh=box.querySelector('.pruh'),bar=pruh.querySelector('i'),vic=box.querySelector('.vic');
-  let stav='?';
-  function ukaz(s,t,v,proc){stav=s;box.hidden=false;box.className='of-'+s+(box.classList.contains('otevreny')?' otevreny':'');txt.textContent=t;vic.textContent=v;
-    pruh.hidden=proc==null;if(proc!=null)bar.style.width=Math.round(proc)+'%'}
+  let stav='?',videlPrubeh=false,schovano=false,schovT=null,zacatekT=null;
+  function ukaz(s,t,v,proc){stav=s;posl={s,t,v,p:proc};posluchaci.forEach(f=>f());
+    box.className='of-'+s+(box.classList.contains('otevreny')?' otevreny':'');txt.textContent=t;vic.textContent=v;
+    pruh.hidden=proc==null;if(proc!=null)bar.style.width=Math.round(proc)+'%';
+    if(!doMenu){box.hidden=false;return}
+    clearTimeout(zacatekT);
+    if(s==='ok'){ // staženo: na hlavní obrazovce jen krátce po dokončení stahování, jinak schované (stav je v menu)
+      if(videlPrubeh&&!schovano){box.hidden=false;clearTimeout(schovT);schovT=setTimeout(()=>{schovano=true;box.hidden=true},4000)}
+      else{schovano=true;box.hidden=true}
+      return}
+    schovano=false;clearTimeout(schovT);box.hidden=false}
   box.onclick=()=>box.classList.toggle('otevreny');
-  if(!('serviceWorker' in navigator)||!window.isSecureContext||/^(blob|data|about|file):/.test(location.protocol)){ukaz('chyba','🌐 Jen online','Tady se hra nedá uložit pro offline. Otevřete ji z '+web);return}
+  if(!('serviceWorker' in navigator)||!window.isSecureContext||/^(blob|data|about|file):/.test(location.protocol)){
+    ukaz('chyba','🌐 Jen online','Tady se hra nedá uložit pro offline. Otevřete ji z '+web);if(doMenu)box.hidden=true;return}
   const hotovo=()=>{if(!navigator.onLine)ukaz('ok','📴 Offline, vše funguje','Hra je uložená v tabletu, hraje se bez internetu.');else ukaz('ok','✅ Připraveno offline','Hra i všechny nahrávky jsou uložené v tabletu. Funguje i bez internetu.')};
-  const stahuje=(h,c)=>{const p=c?h/c*100:0;ukaz('stahuje',`⬇️ Stahuje se pro offline ${Math.round(p)} %`,'Nechte hru chvilku otevřenou, stahují se nahrávky a zvuky'+(velikost?' ('+velikost+')':'')+'. Hrát se dá už teď.',p)};
+  const stahuje=(h,c)=>{const p=c?h/c*100:0;videlPrubeh=true;ukaz('stahuje',`⬇️ Stahuje se pro offline ${Math.round(p)} %`,'Nechte hru chvilku otevřenou, stahují se nahrávky a zvuky'+(velikost?' ('+velikost+')':'')+'. Hrát se dá už teď.',p)};
   const nejde=()=>ukaz('chyba','⚠️ Zatím jen online','Stažení pro offline se nedokončilo. Zkusí se znovu při dalším spuštění s internetem.');
   let bc=null;try{bc=new BroadcastChannel(kanal)}catch(e){}
   if(bc)bc.onmessage=e=>{const d=e.data||{};
@@ -9853,7 +9984,10 @@ window.ZVUKY_DATA = {
     else if(d.typ==='hotovo')hotovo();
     else if(d.typ==='chyba')nejde();
     else if(d.typ==='stav'){if(d.hotovo>=d.celkem&&d.celkem>0)hotovo();else if(stav!=='stahuje')nejde()}};
-  ukaz('stahuje','⬇️ Připravuji offline…','',0);
+  if(doMenu){ // „Připravuji…“ neblikat při každém spuštění: na obrazovku jen když to trvá déle
+    posl={s:'?',t:'⬇️ Připravuji offline…',v:'',p:0};stav='?';
+    zacatekT=setTimeout(()=>{if(stav==='?'){box.className='of-stahuje';txt.textContent='⬇️ Připravuji offline…';pruh.hidden=false;bar.style.width='0%';box.hidden=false}},2500)}
+  else ukaz('stahuje','⬇️ Připravuji offline…','',0);
   navigator.serviceWorker.register('sw.js').then(reg=>{
     const sleduj=w=>{if(!w)return;w.addEventListener('statechange',()=>{if(w.state==='redundant'&&stav==='stahuje')nejde()})};
     sleduj(reg.installing);reg.addEventListener('updatefound',()=>sleduj(reg.installing));
@@ -9863,7 +9997,7 @@ window.ZVUKY_DATA = {
  }};
 })(window);
 
-Offline.init({kanal:'hratky-sw',velikost:'asi 140 MB',web:'https://fraszyk.github.io/chytre-hratky/'});
+Offline.init({kanal:'hratky-sw',velikost:'asi 140 MB',web:'https://fraszyk.github.io/chytre-hratky/',doMenu:true});
 </script>
 
 </body></html>
